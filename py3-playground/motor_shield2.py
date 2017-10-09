@@ -5,10 +5,10 @@ from enum import Enum
 from shift_register import ShiftRegister 
 
 class Motors(Enum):
-    MOTOR0A = 1
-    MOTOR0B = 2
-    MOTOR2A = 3
-    MOTOR2B = 4
+    M1 = 1
+    M2 = 2
+    M3 = 3
+    M4 = 4
 
 class Direction(Enum):
     FORWARD = 1
@@ -55,16 +55,16 @@ class MotorShield:
 
     def wireDCMotors(self, pwm2A=None, pwm2B=None, pwm0A=None, pwm0B=None):    
         if pwm2A:
-            self.motors[self.MOTOR2A] = DCMotor(pwm2A, forward=4, reverse=8)
+            self.motors[Motors.M1] = DCMotor(pwm2A, forward=4, reverse=8)
 
         if pwm2B:
-            self.motors[self.MOTOR2B] = DCMotor(pwm2B, forward=2, reverse=16)
+            self.motors[Motors.M2] = DCMotor(pwm2B, forward=2, reverse=16)
 
         if pwm0A:
-            self.motors[self.MOTOR0A] = DCMotor(pwm0A, forward=1, reverse=64)
+            self.motors[Motors.M3] = DCMotor(pwm0A, forward=1, reverse=64)
     
         if pwm0B:
-            self.motors[self.MOTOR0B] = DCMotor(pwm0B, forward=32, reverse=128)
+            self.motors[Motors.M4] = DCMotor(pwm0B, forward=32, reverse=128)
 
 
     def wireServos(self, pwm1A, pwm1B):
@@ -74,6 +74,7 @@ class MotorShield:
     def setSpeed(self, speed, *motors):
         for which in motors:
             self._motors[which].setSpeed(speed)
+
 
     def run(self, direction=Direction.RELEASE, *motors):
 
