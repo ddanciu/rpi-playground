@@ -1,10 +1,15 @@
 import pygame
+import math
+from time import sleep
 
 #Taken from https://www.pygame.org/docs/ref/joystick.html
 
 # Define some colors
 BLACK    = (   0,   0,   0)
 WHITE    = ( 255, 255, 255)
+RED      = ( 255,   0,   0)
+BLUE     = (   0,   0, 255)
+GREEN    = (   0, 255,   0)
 
 # This is a simple class that will help us print to the screen
 # It has nothing to do with the joysticks, just outputting the
@@ -57,6 +62,21 @@ class Controller:
         self.debug = debug
 
 
+        # Get count of joysticks
+        joystick_count = pygame.joystick.get_count()
+
+        if joystick_count < 1:
+            self.joystick = None
+        else:
+            self.joystick = pygame.joystick.Joystick(0)
+            self.joystick.init()
+
+        self.direction = None
+        self.magnitude = 0
+
+        self.state()
+
+
     def listen(self):
         # -------- Main Program Loop -----------
         while self.done==False:
@@ -68,7 +88,9 @@ class Controller:
                 
                 # Possible joystick actions: JOYAXISMOTION JOYBALLMOTION JOYBUTTONDOWN JOYBUTTONUP JOYHATMOTION
                 if event.type == pygame.JOYAXISMOTION:
-                    print("Joystick AXIS motion.")
+                    #print("Joystick AXIS motion.")
+                    self.handleAxis()
+
 
                 if event.type == pygame.JOYBALLMOTION:
                     print("Joystick BALL motion.")
@@ -87,6 +109,84 @@ class Controller:
         
         self.close()
 
+    def handleAxis(self):
+        x = self.joystick.get_axis( 0 )
+        y = self.joystick.get_axis( 1 )
+
+        self.direction = self.computeDirection(x, y)
+        self.magnitude = self.computeMagnitude(x, y)
+
+    def computeMagnitude(self, x = 0, y = 0):
+        if abs(x) < 0.2 and abs(y) < 0.2:
+            return 0
+        return math.sqrt(x*x + y*y)
+
+    def computeDirection(self, x = 0, y = 0):
+
+        if abs(x) < 0.2 and abs(y) < 0.2:
+            return None
+
+        alpha = math.atan2(-y, x)
+
+        pi_per_8 = math.pi / 8
+        
+        if -pi_per_8 < alpha and alpha <= pi_per_8:
+            _direction = "E"
+
+        if pi_per_8 < alpha and alpha <= (3 * pi_per_8):
+            _direction = "NE"
+        
+        if (3 * pi_per_8) < alpha and alpha <= (5 * pi_per_8):
+            _direction = "N"
+        
+        if (5 * pi_per_8) < alpha and alpha <= (7 * pi_per_8):
+            _direction = "NW"
+        
+        if (7 * pi_per_8) < alpha or alpha <= (-7 * pi_per_8):
+            _direction = "W"
+        
+        if (-7 * pi_per_8) < alpha and alpha <= (-5 * pi_per_8):
+            _direction = "SW"
+        
+        if (-5 * pi_per_8) < alpha and alpha <= (-3 * pi_per_8):
+            _direction = "S"
+
+        if (-3 * pi_per_8) < alpha and alpha <= -pi_per_8:
+            _direction = "SE"
+
+        return _direction
+
+    def getArc(self, _dir):
+
+        pi_per_8 = math.pi / 8
+
+        arcs = {
+
+            "E" : (-pi_per_8, pi_per_8),
+
+            "NE" : (pi_per_8, (3 * pi_per_8)),
+            
+            "N" : ((3 * pi_per_8), (5 * pi_per_8)),
+            
+            "NW" : ((5 * pi_per_8), (7 * pi_per_8)),
+            
+            "W" : ((7 * pi_per_8), (-7 * pi_per_8)),
+            
+            "SW" : ((-7 * pi_per_8), (-5 * pi_per_8)),
+            
+            "S" : ((-5 * pi_per_8), (-3 * pi_per_8)),
+
+            "SE" : ((-3 * pi_per_8), -pi_per_8)
+        }
+
+        return arcs[_dir]
+
+
+    def drawCircleArc(self, screen,color,center,radius,startRad,endRad,thickness):
+        (x,y) = center
+        rect = (x-radius,y-radius,radius*2,radius*2)
+       
+        pygame.draw.arc(screen,color,rect,startRad,endRad,thickness)
 
     def state(self):
         # DRAWING STEP
@@ -94,58 +194,56 @@ class Controller:
         # above this, or they will be erased with this command.
         self.screen.fill(WHITE)
         self.textPrint.reset()
+    
+        # Get the name from the OS for the controller/joystick
+        name = self.joystick.get_name()
+        self.textPrint.print(self.screen, "Joystick name: {}".format(name) )
 
-        # Get count of joysticks
-        joystick_count = pygame.joystick.get_count()
 
-        self.textPrint.print(self.screen, "Number of joysticks: {}".format(joystick_count) )
+        # Get the name from the OS for the controller/joystick
+        self.textPrint.print(self.screen, "DIRECTION: {}, MAGNITUDE: {:>6.3f}".format(self.direction, self.magnitude) )
+        
+        # Usually axis run in pairs, up/down for one, and left/right for
+        # the other.
+        axes = self.joystick.get_numaxes()
+        self.textPrint.print(self.screen, "Number of axes: {}".format(axes) )
         self.textPrint.indent()
         
-        # For each joystick:
-        for i in range(joystick_count):
-            joystick = pygame.joystick.Joystick(i)
-            joystick.init()
+        for i in range( axes ):
+            axis = self.joystick.get_axis( i )
+            self.textPrint.print(self.screen, "Axis {} value: {:>6.3f}".format(i, axis) )
+        self.textPrint.unindent()
+            
+        buttons = self.joystick.get_numbuttons()
+        self.textPrint.print(self.screen, "Number of buttons: {}".format(buttons) )
+        self.textPrint.indent()
+
+        for i in range( buttons ):
+            button = self.joystick.get_button( i )
+            self.textPrint.print(self.screen, "Button {:>2} value: {}".format(i,button) )
+        self.textPrint.unindent()
+            
+        # Hat switch. All or nothing for direction, not like joysticks.
+        # Value comes back in an array.
+        hats = self.joystick.get_numhats()
+        self.textPrint.print(self.screen, "Number of hats: {}".format(hats) )
+        self.textPrint.indent()
+
+        for i in range( hats ):
+            hat = self.joystick.get_hat( i )
+            self.textPrint.print(self.screen, "Hat {} value: {}".format(i, str(hat)) )
+        self.textPrint.unindent()
         
-            self.textPrint.print(self.screen, "Joystick {}".format(i) )
-            self.textPrint.indent()
-        
-            # Get the name from the OS for the controller/joystick
-            name = joystick.get_name()
-            self.textPrint.print(self.screen, "Joystick name: {}".format(name) )
-            
-            # Usually axis run in pairs, up/down for one, and left/right for
-            # the other.
-            axes = joystick.get_numaxes()
-            self.textPrint.print(self.screen, "Number of axes: {}".format(axes) )
-            self.textPrint.indent()
-            
-            for i in range( axes ):
-                axis = joystick.get_axis( i )
-                self.textPrint.print(self.screen, "Axis {} value: {:>6.3f}".format(i, axis) )
-            self.textPrint.unindent()
-                
-            buttons = joystick.get_numbuttons()
-            self.textPrint.print(self.screen, "Number of buttons: {}".format(buttons) )
-            self.textPrint.indent()
+        self.textPrint.unindent()
 
-            for i in range( buttons ):
-                button = joystick.get_button( i )
-                self.textPrint.print(self.screen, "Button {:>2} value: {}".format(i,button) )
-            self.textPrint.unindent()
-                
-            # Hat switch. All or nothing for direction, not like joysticks.
-            # Value comes back in an array.
-            hats = joystick.get_numhats()
-            self.textPrint.print(self.screen, "Number of hats: {}".format(hats) )
-            self.textPrint.indent()
 
-            for i in range( hats ):
-                hat = joystick.get_hat( i )
-                self.textPrint.print(self.screen, "Hat {} value: {}".format(i, str(hat)) )
-            self.textPrint.unindent()
-            
-            self.textPrint.unindent()
-
+        pygame.draw.circle(self.screen, BLACK, (300, 500), 100, 2)
+        if self.direction == None:
+            pygame.draw.circle(self.screen, BLUE, (300, 500), 20, 0)
+        else:
+            arc = self.getArc(self.direction)
+            mag = (int) (100 * min(self.magnitude, 0.99))
+            self.drawCircleArc(self.screen, RED, (300, 500), mag, arc[0], arc[1], mag)
         
         # ALL CODE TO DRAW SHOULD GO ABOVE THIS COMMENT
         
@@ -153,8 +251,10 @@ class Controller:
         pygame.display.flip()
 
         # Limit to 20 frames per second
-        self.clock.tick(10)
+        self.clock.tick(20)
     
+
+
     def close(self):
         # Close the window and quit.
         # If you forget this line, the program will 'hang'
