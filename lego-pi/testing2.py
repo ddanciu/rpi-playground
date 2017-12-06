@@ -7,8 +7,8 @@ from time import sleep
 delay = 2
 
 shield = L298NShield()
-shield.wireMotor(Motors.MotorA, enable=16, inF=20, inB=21)
-shield.wireMotor(Motors.MotorB, enable=13, inF=19, inB=26)
+shield.wireMotor(Motors.MotorA, enable=13, inF=16, inB=19)
+shield.wireMotor(Motors.MotorB, enable=26, inF=20, inB=21)
 shield.setSpeed(1, Motors.MotorA, Motors.MotorB)
 
 while True:

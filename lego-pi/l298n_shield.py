@@ -32,6 +32,11 @@ class L298NShield:
         for motor in motors:
             self._motors[motor].stop()
 
+    def close(self):
+        for motor in [Motors.MotorA, Motors.MotorB]:
+            self._motors[motor].close()
+            self._enable[motor].close()
+
 
 class Tank:
 
@@ -49,7 +54,7 @@ class Tank:
         self._l298n.setSpeed(speed, Motors.MotorA, Motors.MotorB)
         self._l298n.backward(Motors.MotorA, Motors.MotorB)
 
-    def left(self, speed):
+    def left(self, speed): 
         self._l298n.setSpeed(speed, Motors.MotorA, Motors.MotorB)
         self._l298n.forward(Motors.MotorA)
         self._l298n.stop(Motors.MotorB)
@@ -57,6 +62,16 @@ class Tank:
     def right(self, speed):
         self._l298n.setSpeed(speed, Motors.MotorA, Motors.MotorB)
         self._l298n.forward(Motors.MotorB)
+        self._l298n.stop(Motors.MotorA)
+    
+    def leftB(self, speed):
+        self._l298n.setSpeed(speed, Motors.MotorA, Motors.MotorB)
+        self._l298n.backward(Motors.MotorA)
+        self._l298n.stop(Motors.MotorB)
+
+    def rightB(self, speed):
+        self._l298n.setSpeed(speed, Motors.MotorA, Motors.MotorB)
+        self._l298n.backward(Motors.MotorB)
         self._l298n.stop(Motors.MotorA)
 
     def spinRight(self, speed):
@@ -66,6 +81,13 @@ class Tank:
 
     def spinLeft(self, speed):
         self._l298n.setSpeed(speed, Motors.MotorA, Motors.MotorB)
-        self._l298n.forward(Motors.MotorB)
-        self._l298n.backward(Motors.MotorA)
+        self._l298n.forward(Motors.MotorA)
+        self._l298n.backward(Motors.MotorB)
+
+
+    def stop(self, ignore):
+        self._l298n.stop(Motors.MotorA, Motors.MotorB)
+
+    def close(self, ignore):
+        self._l298n.close()
 

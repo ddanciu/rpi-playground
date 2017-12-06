@@ -11,6 +11,9 @@ RED      = ( 255,   0,   0)
 BLUE     = (   0,   0, 255)
 GREEN    = (   0, 255,   0)
 
+
+BUTTON_X = 1
+
 # This is a simple class that will help us print to the screen
 # It has nothing to do with the joysticks, just outputting the
 # information.
@@ -38,8 +41,10 @@ class TextPrint:
 
 class Controller:
 
-    def __init__(self, debug=False):
+    def __init__(self, queue, debug=False):
         pygame.init()
+
+        self.queue = queue
          
         # Set the width and height of the screen [width,height]
         self.screen = pygame.display.set_mode([500, 700])
@@ -80,6 +85,9 @@ class Controller:
     def listen(self):
         # -------- Main Program Loop -----------
         while self.done==False:
+
+
+            self.action = None
             
             # EVENT PROCESSING STEP
             for event in pygame.event.get(): # User did something
@@ -89,32 +97,49 @@ class Controller:
                 # Possible joystick actions: JOYAXISMOTION JOYBALLMOTION JOYBUTTONDOWN JOYBUTTONUP JOYHATMOTION
                 if event.type == pygame.JOYAXISMOTION:
                     #print("Joystick AXIS motion.")
-                    self.handleAxis()
+                    
+                    x = self.joystick.get_axis( 0 )
+                    y = self.joystick.get_axis( 1 )
 
+                    self.direction = self.computeDirection(x, y)
+                    self.magnitude = self.computeMagnitude(x, y)
+
+                    self.action = (self.direction, self.magnitude)
 
                 if event.type == pygame.JOYBALLMOTION:
                     print("Joystick BALL motion.")
                     
                 if event.type == pygame.JOYBUTTONDOWN:
-                    print("Joystick BUTTON pressed.")
+                    print("Joystick BUTTON pressed, quit: " + str(self.done))
+                    self.done = self.done | (self.joystick.get_button( 1 ) == 1)
                     
+
+
                 if event.type == pygame.JOYBUTTONUP:
                     print("Joystick BUTTON released.")
+                    
                     
                 if event.type == pygame.JOYHATMOTION:
                     print("Joystick HAT motion.")
             
+
+
+            if self.done: 
+                self.action = ("Q", 0)
+
+            if self.action:
+                self.queue.put(self.action)
+
+
+                
+            # Limit to 20 frames per second
+            self.clock.tick(20)
+                
             if self.debug:
                 self.state()        
         
         self.close()
-
-    def handleAxis(self):
-        x = self.joystick.get_axis( 0 )
-        y = self.joystick.get_axis( 1 )
-
-        self.direction = self.computeDirection(x, y)
-        self.magnitude = self.computeMagnitude(x, y)
+        
 
     def computeMagnitude(self, x = 0, y = 0):
         if abs(x) < 0.2 and abs(y) < 0.2:
@@ -250,8 +275,6 @@ class Controller:
         # Go ahead and update the screen with what we've drawn.
         pygame.display.flip()
 
-        # Limit to 20 frames per second
-        self.clock.tick(20)
     
 
 
@@ -262,6 +285,4 @@ class Controller:
         pygame.quit ()
 
 
-if __name__ == "__main__":
-    ds4 = Controller(debug=True)
-    ds4.listen()
+

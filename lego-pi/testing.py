@@ -4,7 +4,7 @@ from time import sleep
 
 delay = 2
 
-tank = Tank(enA=13, in1=19, in2=26, enB=16, in3=20, in4=21)
+tank = Tank(enA=13, in1=19, in2=12, enB=26, in3=20, in4=21)
 
 while True:
     print("Forward full speed")
